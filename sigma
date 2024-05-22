@@ -1,0 +1,127 @@
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local LOCKON_KEY = Enum.KeyCode.X
+local lockOn = false
+local targetPlayer = nil
+
+function findNearestHead()
+    local nearestDistance = math.huge
+    local nearestHead = nil
+
+    for , player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local head = player.Character.Head
+            local distance = (LocalPlayer.Character.Head.Position - head.Position).magnitude
+
+            if distance < nearestDistance then
+                nearestDistance = distance
+                nearestHead = head
+                targetPlayer = player
+            end
+        end
+    end
+
+    return nearestHead
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == LOCK_ON_KEY then
+        lockOn = not lockOn
+        if lockOn then
+            local head = findNearestHead()
+            if head then
+                while lockOn and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") do
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+                    wait()
+                end
+            end
+        end
+    end
+end)
+
+-- If the target player dies or is removed, stop locking on
+Players.PlayerRemoving:Connect(function(player)
+    if player == targetPlayer then
+        lockOn = false
+    end
+end)
+
+-- Import the necessary library
+local Players = game:GetService("Players")
+
+-- Function to highlight all players in the game
+local function highlightAllPlayers()
+    for _, player in ipairs(Players:GetPlayers()) do
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PlayerHighlight"
+        highlight.FillColor = Color3.fromRGB(255, 192, 203) -- Pink color
+        highlight.OutlineColor = Color3.fromRGB(255, 192, 203)
+        highlight.Parent = player.Character
+    end
+end
+
+-- Call the function to highlight all players
+highlightAllPlayers()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Function to create a nametag for a character
+local function createNametag(character)
+    -- Check if a nametag already exists to avoid duplicates
+    if character:FindFirstChild("Nametag") then
+        return
+    end
+
+    -- Create the BillboardGui
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "Nametag"
+    billboardGui.Adornee = character:WaitForChild("Head")
+    billboardGui.Size = UDim2.new(0, 70, 0,70)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.AlwaysOnTop = true
+
+    -- Create the TextLabel
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Text = character.Name
+    textLabel.Parent = billboardGui
+
+    -- Parent the BillboardGui to the character's head
+    billboardGui.Parent = character:WaitForChild("Head")
+end
+
+-- Function to add nametags to all players
+local function addNametags()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character then
+            createNametag(player.Character)
+        end
+    end
+end
+
+-- Add nametags when players join
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        createNametag(character)
+    end)
+end)
+
+-- Initial addition of nametags for existing players
+addNametags()
+
+-- Update nametags when characters are added
+Players.PlayerRemoving:Connect(function(player)
+    if player.Character and player.Character:FindFirstChild("Nametag") then
+        player.Character.Nametag:Destroy()
+    end
+end)
